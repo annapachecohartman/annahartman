@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html>
+<link rel="stylesheet", href="snakestyle.css">
+<header class="header">
+    <div class="title">
+    <h1>Anna Hartman</h1>
+    <h3>Texas A&M University Honors Undergraduate CPSC Student</h3>
+    </div>
+    <nav class="nav-items">
+    <a class="active" href="index.html">Home</a>
+    <a href="resume.html">Resumé</a>
+    <a href="contact.html">Contact</a>
+    <a href="snake.html">Play snake!</a>
+</nav>
+</header>
+
+  <head>
+	<h1>Snake score:</h1>
+	<div class="playButton">
+	<a href="snake.html"> Play again!</a>
+  	</div>
+  </head>
+
+  <body>
+
+    <div id="score">0</div>
+    <canvas id="gameCanvas" width="300" height="300"></canvas>
+
+    <style>
+      #gameCanvas {
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+		position: absolute;
+      }
+
+      #score {
+        text-align: center;
+        font-size: 50px;
+        font-family: Arial;
+		position: relative;
+
+		bottom: 250px;
+		
+      }
+    </style>
+  </body>
+
+  <!-- begin javascript portion -->
+  <script>
+
+	const snakeColor = 'lightgreen';
+    // const snakeBorder = 'black';
+    const colorOfFood = 'red';
+    // const foodBorder = 'darkred';
+    const speed = 100;
+    const canvasBorder = 'black';
+    const canvasBackground = "white";
+
+    let score = 0;
+	// true = snake is changing directions
+    let changingDirection = false;
+    // x-coordinate
+    let foodX;
+    // y-coordinate
+    let foodY;
+    // horiz velocity
+    let dx = 10;
+    // vert velocity
+    let dy = 0;
+
+
+
+	//snake coordinates
+    let snake = [
+      {x: 150, y: 150},
+      {x: 140, y: 150},
+      {x: 130, y: 150},
+      {x: 120, y: 150},
+      {x: 110, y: 150}
+    ]
+
+
+
+    // Get canvas 
+    const gameCanvas = document.getElementById("gameCanvas");
+    const context = gameCanvas.getContext("2d");
+
+    // Start game
+    main();
+    //create initial apple
+    createApple();
+    // see if key is pressed to change direction
+    document.addEventListener("keydown", changeDirection);
+
+
+    /**
+     * Main function 
+     * call to repeat game
+     */
+    function main() {
+      // return if game is over
+      if (didGameEnd()){
+		return;
+	  }
+      setTimeout(function onTick() {
+		changingDirection = false;
+        drawCanvas();
+        drawApple();
+        moveSnake();
+        drawSnake();
+	
+
+        main();
+      }, speed)
+    }
+
+    /**
+     * Color in canvas and canvas border
+     */
+    function drawCanvas() {
+      context.fillStyle = canvasBackground;
+      context.strokestyle = canvasBorder;
+      context.fillRect(0, 0, gameCanvas.width, gameCanvas.height)
+      context.strokeRect(0, 0, gameCanvas.width, gameCanvas.height);
+    }
+
+    /**
+     * Draw in the apple on the game canvas
+     */
+    function drawApple() {
+      context.fillStyle = colorOfFood;
+    //   context.strokestyle = foodBorder;
+      context.fillRect(foodX, foodY, 10, 10);
+	 
+    //   context.strokeRect(foodX, foodY, 10, 10);
+    }
+
+	 /**
+     * Draws the snake on the game canvas
+     */
+	 function drawSnake() {
+      // draw each snake part one by one
+      snake.forEach(drawSnakeSquare)
+    }
+
+    /**
+     * Draw a part of the snake
+     * @param { object } snakeSqr - coordinates of square to be drawn on canvas
+     */
+    function drawSnakeSquare(snakeSqr) {
+      context.fillStyle = snakeColor; //set color of square
+    //   context.strokestyle = snakeBorder; //set border
+      context.fillRect(snakeSqr.x, snakeSqr.y, 10, 10);
+    //   context.strokeRect(snakeSqr.x, snakeSqr.y, 10, 10);
+    }
+
+
+    /**
+     * Moves the snake forward by changing its x coords
+     * according to y coords and y velocity 
+     * and vice versa
+     */
+    function moveSnake() {
+      // Create the new Snake's head
+      const head = {x: snake[0].x + dx, y: snake[0].y + dy};
+      snake.unshift(head);
+
+      const ateApple = snake[0].x === foodX && snake[0].y === foodY;
+      if (ateApple) {
+        // increment score
+        score += 1;
+        // Display score 
+        document.getElementById('score').innerHTML = score;
+        // Generate new food location
+        createApple();
+      } else {
+        // Remove the last part of snake body
+        snake.pop();
+      }
+    }
+
+	 /**
+     * Generates random coords for snake apple
+     */
+	 function createApple() {
+      // Generate a random number the food x-coordinate
+      foodX = randomTen(0, gameCanvas.width - 10);
+      // Generate a random number for the food y-coordinate
+      foodY = randomTen(0, gameCanvas.height - 10);
+
+      // if the new food location is where the snake currently is, generate a new food location
+      snake.forEach(function isFoodOnSnake(part) {
+        const foodIsoNsnake = part.x == foodX && part.y == foodY;
+        if (foodIsoNsnake) createApple();
+      });
+    }
+
+    /**
+     * Returns true if the head of the snake hit
+     * something other than the apple
+     */
+    function didGameEnd() {
+      for (let i = 4; i < snake.length; i++) {
+        if (snake[i].x === snake[0].x && snake[i].y === snake[0].y) return true
+      }
+
+      const hitLWall = snake[0].x < 0;
+      const hitRWall = snake[0].x > gameCanvas.width - 10;
+      const hitTWall = snake[0].y < 0;
+      const hitBWall = snake[0].y > gameCanvas.height - 10;
+
+	  const hitSomething = hitLWall || hitRWall || hitTWall || hitBWall
+      return hitSomething
+    }
+
+    /**
+     * Gives a random multiple of 10 given a min
+     * and a max #
+     * @param { number } min - The minimum number in the random #'s range 
+     * @param { number } max - The maximum number in the random #'s range
+     */
+    function randomTen(min, max) {
+      return Math.round((Math.random() * (max-min) + min) / 10) * 10;
+    }
+   
+    /**
+     * Alters the vert/horiz velocity of the snake matching the
+     * pressed key
+     * Does not allow the direction to go suddenly opposite, so snake cannot
+     * suddenly go backward
+     * @param { object } e - The keydown event
+     */
+    function changeDirection(e) {
+      const leftKey = 37;
+      const rightKey = 39;
+      const upKey = 38;
+      const downKey = 40;
+
+      const up = dy === -10;
+      const down = dy === 10;
+      const right = dx === 10;
+      const left = dx === -10;
+
+      if (changingDirection) return;
+
+      changingDirection = true;
+      const pressedKey = e.keyCode;
+
+      if (pressedKey === leftKey && !right) {
+        dx = -10;
+        dy = 0;
+      }
+      if (pressedKey === upKey && !down) {
+        dx = 0;
+        dy = -10;
+      }
+      if (pressedKey === rightKey && !left) {
+        dx = 10;
+        dy = 0;
+      }
+      if (pressedKey === downKey && !up) {
+        dx = 0;
+        dy = 10;
+      }
+    }
+
+  </script>
+</html>
